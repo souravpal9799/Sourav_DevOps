@@ -1,0 +1,22 @@
+---
+all:
+  children:
+
+    prometheus:
+      hosts:
+        Devops:
+          ansible_user: root
+          ansible_host: 127.0.0.1
+          private_ip_addr: 127.0.0.1
+          public_ip_addr: 127.0.0.1
+          exporters:
+            nginx: true
+            node: true
+
+    prometheus_agents:
+      hosts:
+        Devops:
+          ansible_user: root
+          ansible_host: 127.0.0.1
+          private_ip_addr: 127.0.0.1
+          public_ip_addr: 127.0.0.1

@@ -1,0 +1,65 @@
+---
+- name: Get latest Alertmanager release metadata
+  command: >
+    curl -fsSL https://api.github.com/repos/prometheus/alertmanager/releases/latest
+  register: alertmanager_release
+  changed_when: false
+
+- name: Set Alertmanager version fact
+  set_fact:
+    alertmanager_version: "{{ alertmanager_release.stdout | from_json | json_query('tag_name') }}"
+
+- name: Download Alertmanager
+  get_url:
+    url: "https://github.com/prometheus/alertmanager/releases/download/{{ alertmanager_version }}/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64.tar.gz"
+    dest: "/tmp/alertmanager-{{ alertmanager_version }}.tar.gz"
+    mode: '0644'
+
+- name: Extract Alertmanager
+  unarchive:
+    src: "/tmp/alertmanager-{{ alertmanager_version }}.tar.gz"
+    dest: /usr/local/bin/
+    remote_src: yes
+    creates: "/usr/local/bin/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64"
+
+- name: Ensure Alertmanager binary executable
+  file:
+    path: "/usr/local/bin/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64/alertmanager"
+    mode: '0755'
+
+- name: Update Alertmanager directory
+  command: >
+    mv /usr/local/bin/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64 /usr/local/bin/alertmanager
+  args:
+    creates: /usr/local/bin/alertmanager
+
+- name: Create Alertmanager config directory
+  file:
+    path: /etc/alertmanager
+    state: directory
+    mode: '0755'
+
+- name: Deploy Alertmanager configuration
+  template:
+    src: alertmanager.yml.j2
+    dest: /etc/alertmanager/alertmanager.yml
+    mode: '0644'
+  notify: Restart alertmanager
+
+- name: Install Alertmanager systemd service
+  template:
+    src: alertmanager.service.j2
+    dest: /etc/systemd/system/alertmanager.service
+    mode: '0644'
+  notify: Restart alertmanager
+
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Enable and start Alertmanager
+  systemd:
+    name: alertmanager
+    enabled: yes
+    state: started
+

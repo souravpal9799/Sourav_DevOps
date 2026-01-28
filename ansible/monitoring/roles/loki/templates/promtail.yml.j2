@@ -1,0 +1,74 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /var/lib/loki/promtail/positions.yaml
+
+clients:
+  - url: http://127.0.0.1:3100/loki/api/v1/push
+
+scrape_configs:
+  # System logs
+  - job_name: system
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: system-logs
+          host: ${HOSTNAME}
+          __path__: /var/log/*.log
+
+  # Auth logs
+  - job_name: auth
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: auth-logs
+          host: ${HOSTNAME}
+          __path__: /var/log/auth.log
+
+  # Syslog
+  - job_name: syslog
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: syslog
+          host: ${HOSTNAME}
+          __path__: /var/log/syslog
+
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: nginx-logs
+          host: ${HOSTNAME}
+          __path__: /var/log/nginx/*.log
+
+  # PM2 logs
+  - job_name: pm2
+    static_configs:
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: pm2
+          source: pm2
+          user: app
+          __path__: /home/app/.pm2/logs/*.log
+
+      - targets:
+          - 127.0.0.1
+        labels:
+          job: pm2
+          source: pm2
+          __path__: /root/.pm2/logs/*.log
+    pipeline_stages:
+      - regex:
+          source: filename
+          expression: '.*/(?P<service>[^/]+)-(out|error)\.log'
+      - labels:
+          service:
+

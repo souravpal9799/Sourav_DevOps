@@ -1,0 +1,99 @@
+---
+- name: Create Grafana provisioning directory
+  file:
+    path: /etc/grafana/provisioning/datasources
+    state: directory
+
+- name: Configure Prometheus datasource
+  template:
+    src: prometheus-datasource.yml
+    dest: /etc/grafana/provisioning/datasources/prometheus.yml
+    owner: root
+    group: grafana
+    mode: "0640"
+
+- name: Create Grafana dashboards directory
+  file:
+    path: /var/lib/grafana/dashboards
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: Download Node Exporter dashboard
+  get_url:
+    url: https://grafana.com/api/dashboards/1860/revisions/31/download
+    dest: /var/lib/grafana/dashboards/node-exporter.json
+    mode: "0644"
+
+- name: Download MySQL Exporter dashboard
+  get_url:
+    url: https://grafana.com/api/dashboards/7362/revisions/5/download
+    dest: /var/lib/grafana/dashboards/mysql.json
+    mode: "0644"
+
+- name: Download Blackbox Exporter dashboard
+  get_url:
+    url: https://grafana.com/api/dashboards/7587/revisions/3/download
+    dest: /var/lib/grafana/dashboards/blackbox.json
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: Add DS_PROMETHEUS variable to MySQL dashboard
+  replace:
+    path: /var/lib/grafana/dashboards/mysql.json
+    regexp: '"templating":\s*{\s*"list":\s*\['
+    replace: |
+      "templating": {
+        "list": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "query": "prometheus"
+          },
+
+- name: Normalize Blackbox dashboard datasource references
+  replace:
+    path: /var/lib/grafana/dashboards/blackbox.json
+    regexp: 'DS_SIGNCL-PROMETHEUS|DS_SINGLE-PROMETHEUS'
+    replace: 'DS_PROMETHEUS'
+
+- name: Add DS_PROMETHEUS variable to blackbox dashboard
+  replace:
+    path: /var/lib/grafana/dashboards/blackbox.json
+    regexp: '"templating":\s*{\s*"list":\s*\['
+    replace: |
+      "templating": {
+        "list": [
+          {
+            "name": "DS_PROMETHEUS",
+            "type": "datasource",
+            "query": "prometheus"
+          },
+
+- name: Configure Grafana dashboard provider
+  template:
+    src: pm2-log-stream.json.j2
+    dest: /var/lib/grafana/dashboards/pm2-log-stream.json
+    owner: root
+    group: grafana
+    mode: "0640"
+
+- name: Create Grafana dashboard provisioning directory
+  file:
+    path: /etc/grafana/provisioning/dashboards
+    state: directory
+    owner: root
+    group: grafana
+    mode: "0750"
+
+- name: Configure Grafana dashboard provider
+  template:
+    src: dashboards.yml.j2
+    dest: /etc/grafana/provisioning/dashboards/dashboards.yml
+    owner: root
+    group: grafana
+    mode: "0640"
+  notify: Restart Grafana
+
+

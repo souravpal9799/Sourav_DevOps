@@ -1,0 +1,15 @@
+# roles/loki/handlers/main.yml
+---
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+
+- name: Restart Loki
+  systemd:
+    name: loki
+    state: restarted
+
+- name: Restart Promtail
+  systemd:
+    name: promtail
+    state: restarted

@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    uid: DS_LOKI
+    access: proxy
+    url: http://{{ private_ip_addr }}:{{ loki_port }}
+    isDefault: false
+    jsonData:
+      maxLines: 1000

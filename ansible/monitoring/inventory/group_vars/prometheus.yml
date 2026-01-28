@@ -1,0 +1,27 @@
+node_exporter_targets: >-
+  {{ groups['all']
+     | map('extract', hostvars)
+     | selectattr('exporters', 'defined')
+     | selectattr('exporters', 'contains', 'node')
+     | map(attribute='public_ip_addr')
+     | map('regex_replace', '(.*)', '\\1:' ~ node_exporter_port)
+     | list }}
+
+nats_exporter_targets: >-
+  {{ groups['all']
+     | map('extract', hostvars)
+     | selectattr('exporters', 'defined')
+     | selectattr('exporters', 'contains', 'nats')
+     | map(attribute='public_ip_addr')
+     | map('regex_replace', '(.*)', '\\1:' ~ nats_exporter_port)
+     | list }}
+
+xhttp_exporter_targets: >-
+  {{ groups['all']
+     | map('extract', hostvars)
+     | selectattr('exporters', 'defined')
+     | selectattr('exporters', 'contains', 'xhttp')
+     | map(attribute='public_ip_addr')
+     | map('regex_replace', '(.*)', '\\1:' ~ xhttp_prom_port)
+     | list }}
+

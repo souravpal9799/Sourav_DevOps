@@ -1,0 +1,53 @@
+---
+- name: Create mysql_exporter user
+  user:
+    name: mysql_exporter
+    shell: /usr/sbin/nologin
+    system: yes
+
+- name: Download mysql_exporter
+  get_url:
+    url: https://github.com/prometheus/mysqld_exporter/releases/download/v{{ mysql_exporter_version }}/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64.tar.gz
+    dest: /usr/local/src/
+
+- name: Extract mysql_exporter
+  unarchive:
+    src: /usr/local/src/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64.tar.gz
+    dest: /usr/local/src/
+    remote_src: yes
+
+- name: Install mysql_exporter binary
+  copy:
+    src: /usr/local/src/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64/mysqld_exporter
+    dest: /usr/local/bin/mysqld_exporter
+    mode: '0755'
+    remote_src: yes
+
+- name: Create config directory
+  file:
+    path: /etc/mysql_exporter
+    state: directory
+    owner: mysql_exporter
+    mode: '0750'
+
+- name: Deploy MySQL exporter config
+  template:
+    src: my.cnf.j2
+    dest: /etc/mysql_exporter/.my.cnf
+    owner: mysql_exporter
+    mode: '0600'
+  notify: restart mysql_exporter
+
+- name: Install systemd service
+  template:
+    src: mysql_exporter.service.j2
+    dest: /etc/systemd/system/mysql_exporter.service
+  notify: restart mysql_exporter
+
+- name: Enable and start mysql_exporter
+  systemd:
+    name: mysql_exporter
+    enabled: yes
+    state: started
+    daemon_reload: yes
+

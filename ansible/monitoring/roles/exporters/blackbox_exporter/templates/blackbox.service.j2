@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus Blackbox Exporter
+After=network.target
+
+[Service]
+User={{ blackbox_user }}
+Group={{ blackbox_user }}
+ExecStart=/usr/local/bin/blackbox/blackbox_exporter \
+  --config.file={{ blackbox_install_dir }}/blackbox.yml \
+  --web.listen-address=0.0.0.0:{{ blackbox_exporter_port }}
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

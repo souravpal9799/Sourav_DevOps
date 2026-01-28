@@ -1,0 +1,74 @@
+---
+- name: Get latest Prometheus version
+  shell: |
+    curl -s https://api.github.com/repos/prometheus/prometheus/releases/latest \
+    | grep tag_name | cut -d '"' -f4
+  register: prometheus_release
+  changed_when: false
+
+- name: Set Prometheus version without leading v
+  set_fact:
+    prometheus_version: "{{ prometheus_release.stdout | regex_replace('^v', '') }}"
+
+- name: Download Prometheus latest release
+  get_url:
+    url: "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+    dest: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
+    mode: '0644'
+
+- name: Extract Prometheus
+  unarchive:
+    src: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
+    dest: /opt
+    remote_src: yes
+    creates: "/opt/prometheus-{{ prometheus_version }}.linux-amd64"
+
+# Rename extracted directory instead of symlink
+- name: Rename Prometheus directory to /opt/prometheus
+  command: >
+    mv /opt/prometheus-{{ prometheus_version }}.linux-amd64 /opt/prometheus
+  args:
+    creates: /opt/prometheus
+
+- name: Create Prometheus directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: u=rwX,g=rX,o=rX
+  loop:
+    - /opt/prometheus/files_sd
+
+- name: Ensure Prometheus binary permissions
+  file:
+    path: /opt/prometheus/prometheus
+    owner: root
+    group: root
+    mode: '0755'
+  notify:
+    - restart prometheus
+
+- name: Deploy Prometheus service configs
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - { src: 'prometheus.service.j2', dest: '/etc/systemd/system/prometheus.service' }
+    - { src: 'rules.yml.j2', dest: '/opt/prometheus/rules.yml' }
+  notify:
+    - reload systemd
+    - restart prometheus
+
+- name: Deploy Prometheus main config
+  template:
+    src: prometheus.yml.j2
+    dest: /opt/prometheus/prometheus.yml
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - restart prometheus

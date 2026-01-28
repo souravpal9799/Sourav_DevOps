@@ -1,0 +1,17 @@
+[Unit]
+Description=Loki Log Aggregation System
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/bin/loki/loki-linux-amd64 -config.file=/etc/loki/loki.yaml
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=0
+TimeoutStartSec=300
+Environment="GOMAXPROCS=2"
+
+[Install]
+WantedBy=multi-user.target

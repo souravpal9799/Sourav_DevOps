@@ -1,0 +1,121 @@
+---
+- name: Discover latest Loki release version
+  uri:
+    url: https://api.github.com/repos/grafana/loki/releases/latest
+    return_content: yes
+  register: loki_release
+  run_once: true
+  delegate_to: localhost
+  become: false
+  when: loki_version == "latest"
+
+- name: Set Loki version fact
+  set_fact:
+    loki_version: "{{ loki_release.json.tag_name | regex_replace('^v', '') }}"
+  when: loki_version == "latest"
+
+- name: Create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "/usr/local/bin/loki"
+    - "/etc/loki"
+    - "/var/lib/loki"
+    - "/var/lib/loki/promtail"
+
+- name: Install unzip
+  package:
+    name: unzip
+    state: present
+
+- name: Download Loki
+  get_url:
+    url: "https://github.com/grafana/loki/releases/download/v{{ loki_version }}/loki-linux-amd64.zip"
+    dest: "/tmp/loki-{{ loki_version }}.zip"
+    mode: '0644'
+
+- name: Download Promtail
+  get_url:
+    url: "https://github.com/grafana/loki/releases/download/v{{ loki_version }}/promtail-linux-amd64.zip"
+    dest: "/tmp/promtail-{{ loki_version }}.zip"
+    mode: '0644'
+
+- name: Extract Loki
+  unarchive:
+    src: "/tmp/loki-{{ loki_version }}.zip"
+    dest: "/usr/local/bin/loki"
+    remote_src: yes
+    creates: "/usr/local/bin/loki/loki-linux-amd64"
+
+- name: Extract Promtail
+  unarchive:
+    src: "/tmp/promtail-{{ loki_version }}.zip"
+    dest: "/usr/local/bin/loki"
+    remote_src: yes
+    creates: "/usr/local/bin/loki/promtail-linux-amd64"
+
+- name: Set Loki binary permissions
+  file:
+    path: "/usr/local/bin/loki/loki-linux-amd64"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Set Promtail binary permissions
+  file:
+    path: "/usr/local/bin/loki/promtail-linux-amd64"
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy Loki config
+  template:
+    src: loki-config.yml.j2
+    dest: "/etc/loki/loki.yaml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Loki
+
+- name: Deploy Promtail config
+  template:
+    src: promtail.yml.j2
+    dest: "/etc/loki/promtail.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Promtail
+
+- name: Install Loki systemd service
+  template:
+    src: loki.service.j2
+    dest: /etc/systemd/system/loki.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Install Promtail systemd service
+  template:
+    src: promtail.service.j2
+    dest: /etc/systemd/system/promtail.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd
+
+- name: Start Loki
+  systemd:
+    name: loki
+    enabled: yes
+    state: started
+
+- name: Start Promtail
+  systemd:
+    name: promtail
+    enabled: yes
+    state: started

@@ -1,0 +1,49 @@
+---
+ansible_python_interpreter: /usr/bin/python3
+
+alertmanager_email_enabled: true
+alertmanager_email_to: sourav.pal@gmail.com
+alertmanager_email_from: sourav.pal@gmail.com
+alertmanager_smtp_host: smtp.dreamhost.com:587
+alertmanager_smtp_user: sourav.pal@gmail.com
+alertmanager_smtp_password: "<password>"
+
+alertmanager_slack_enabled: false
+alertmanager_slack_webhook: "<Slack_channel_webhook>"
+alertmanager_slack_channel: "#Prometheus-alerts"
+
+blackbox_exporter_port: 9115
+prometheus_port: 9090
+loki_port: 3100
+node_exporter_port: 9100
+nginx_exporter_port: 9107
+nats_exporter_port: 7777
+mysql_exporter_port: 9109
+grafana_app_mode: production
+build_branch: main
+
+scrape_interval: 30s
+evaluation_interval: 30s
+
+alertmanager_targets:
+    - "{{ hostvars['Devops']['private_ip_addr'] }}:9093"
+
+rule_files:
+    - "rules.yml"
+
+prometheus_targets:
+    - "{{ hostvars['Devops']['private_ip_addr'] }}:9090"
+
+blackbox_urls:
+  Devops:
+    - "https://github.com"
+    - "https://google.com"
+
+blackbox_tcp_ports:
+  - 3000
+  - 3001
+  - 3002
+  - 3003
+
+blackbox_ips:
+  Devops: 127.0.0.1

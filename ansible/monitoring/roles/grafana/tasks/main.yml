@@ -1,0 +1,208 @@
+---
+- name: Ensure grafana group exists
+  group:
+    name: grafana
+    system: yes
+
+- name: Ensure grafana user exists
+  user:
+    name: grafana
+    group: grafana
+    system: yes
+    shell: /usr/sbin/nologin
+    home: /var/lib/grafana
+
+- name: Install dependencies
+  apt:
+    name:
+      - apt-transport-https
+      - wget
+      - gpg
+      - software-properties-common
+    state: present
+    update_cache: yes
+
+- name: Clean up any remaining Grafana files
+  shell: |
+    rm -rf /etc/grafana /var/lib/grafana /var/log/grafana /var/run/grafana
+    rm -f /usr/lib/systemd/system/grafana-server.service
+    rm -f /etc/systemd/system/grafana-server.service
+    rm -f /etc/init.d/grafana-server
+    systemctl daemon-reload 2>/dev/null || true
+  ignore_errors: yes
+
+- name: Create apt keyrings directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Download Grafana GPG key
+  get_url:
+    url: https://apt.grafana.com/gpg.key
+    dest: /tmp/grafana.gpg
+    mode: "0644"
+
+- name: Convert Grafana GPG key to keyring format
+  command: >
+    gpg --dearmor -o /etc/apt/keyrings/grafana.gpg /tmp/grafana.gpg
+  args:
+    creates: /etc/apt/keyrings/grafana.gpg
+
+- name: Add Grafana stable repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main"
+    filename: grafana
+    state: present
+
+- name: Add Grafana beta repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com beta main"
+    filename: grafana
+    state: present
+
+- name: Install Grafana
+  apt:
+    name: grafana
+    state: present
+  notify: Reload systemd
+
+- name: Ensure /etc/grafana directory exists
+  file:
+    path: /etc/grafana
+    state: directory
+    owner: root
+    group: grafana
+    mode: "0755"  # Changed from 0750
+
+- name: Create minimal grafana.ini configuration
+  copy:
+    dest: /etc/grafana/grafana.ini
+    content: |
+      # Minimal Grafana configuration
+      [server]
+      http_port = 3000
+      domain = localhost
+      root_url = %(protocol)s://%(domain)s:%(http_port)s/
+      serve_from_sub_path = false
+      
+      [database]
+      type = sqlite3
+      path = /var/lib/grafana/grafana.db
+      
+      [security]
+      admin_user = admin
+      admin_password = admin
+      
+      [paths]
+      data = /var/lib/grafana
+      logs = /var/log/grafana
+      plugins = /var/lib/grafana/plugins
+      provisioning = /etc/grafana/provisioning
+    owner: root
+    group: grafana
+    mode: "0640"
+
+- name: Ensure Grafana data directory exists
+  file:
+    path: /var/lib/grafana
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: Ensure Grafana log directory exists
+  file:
+    path: /var/log/grafana
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: Ensure Grafana run directory exists
+  file:
+    path: /var/run/grafana
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: Ensure Grafana provisioning directory exists
+  file:
+    path: /etc/grafana/provisioning
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: Set correct ownership on all Grafana directories
+  shell: |
+    chown -R grafana:grafana /var/lib/grafana
+    chown -R grafana:grafana /var/log/grafana
+    chown -R grafana:grafana /var/run/grafana
+    chown -R root:grafana /etc/grafana
+    chmod -R g+r /etc/grafana
+  args:
+    creates: /var/lib/grafana/.ansible_ownership_set
+
+- name: Create marker file for ownership
+  file:
+    path: /var/lib/grafana/.ansible_ownership_set
+    state: touch
+    owner: grafana
+    group: grafana
+    mode: "0644"
+
+# Fix the systemd service configuration
+- name: Fix Grafana systemd service file
+  copy:
+    dest: /usr/lib/systemd/system/grafana-server.service
+    content: |
+      [Unit]
+      Description=Grafana instance
+      Documentation=http://docs.grafana.org
+      Wants=network-online.target
+      After=network-online.target
+      
+      [Service]
+      EnvironmentFile=-/etc/default/grafana-server
+      User=grafana
+      Group=grafana
+      Type=simple
+      Restart=on-failure
+      WorkingDirectory=/usr/share/grafana
+      ExecStart=/usr/sbin/grafana-server \
+        --config=/etc/grafana/grafana.ini \
+        --pidfile=/var/run/grafana/grafana-server.pid \
+        cfg:default.paths.data=/var/lib/grafana \
+        cfg:default.paths.logs=/var/log/grafana \
+        cfg:default.paths.plugins=/var/lib/grafana/plugins
+      LimitNOFILE=10000
+      TimeoutStopSec=20
+      ProtectSystem=full
+      ProtectHome=true
+      ReadWritePaths=/var/lib/grafana /var/log/grafana /etc/grafana
+      PrivateTmp=true
+      
+      [Install]
+      WantedBy=multi-user.target
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+# Include other tasks
+- include_tasks: prometheus_dashboard.yml
+- include_tasks: loki.yml
+
+# But for now, let's fix the order:
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
+  when: false  # We'll handle this with notify
+
+- name: Enable and start Grafana
+  systemd:
+    name: grafana-server
+    enabled: yes
+    state: started

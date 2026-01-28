@@ -1,0 +1,56 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: "default-notifications"
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: "default-notifications"
+
+{% if alertmanager_email_enabled | default(false) %}
+    email_configs:
+      - to: "{{ alertmanager_email_to }}"
+        from: "{{ alertmanager_email_from }}"
+        smarthost: "{{ alertmanager_smtp_host }}"
+        auth_username: "{{ alertmanager_smtp_user }}"
+        auth_password: "{{ alertmanager_smtp_password }}"
+        require_tls: true
+{% endif %}
+
+{% if alertmanager_slack_enabled | default(false) %}
+    slack_configs:
+      - api_url: "{{ alertmanager_slack_webhook }}"
+        channel: "{{ alertmanager_slack_channel }}"
+        send_resolved: true
+{% raw %}
+        title: >-
+          {{ .CommonLabels.alertname }} ({{ .Status | toUpper }})
+
+        text: >-
+          {{ range .Alerts }}
+          *Host:* {{ .Labels.instance }}
+          {{- if .Labels.hostname }}
+          ({{ .Labels.hostname }})
+          {{- end }}
+
+          *Severity:* {{ .Labels.severity | default "unknown" }}
+
+          *Description:* {{ .Annotations.description | default "N/A" }}
+
+          *Started At:* {{ .StartsAt }}
+
+          {{- if eq .Status "firing" }}
+          *⏱Open For:* {{ humanizeDuration (now.Sub .StartsAt) }}
+          {{- else }}
+          *Resolved At:* {{ .EndsAt }}
+          {{- end }}
+
+          ---------------------------------------
+          {{ end }}
+{% endraw %}
+{% endif %}
+

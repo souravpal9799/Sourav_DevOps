@@ -1,0 +1,38 @@
+[Unit]
+Description=Promtail Log Shipper
+Documentation=https://grafana.com/docs/loki/latest/clients/promtail/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+ExecStart=/usr/local/bin/loki/promtail-linux-amd64 \
+  -config.file=/etc/loki/promtail.yml \
+  -config.expand-env=true
+
+Restart=always
+RestartSec=5s
+
+# Hardening (PM2 compatible)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=false
+
+# Allow Promtail to read logs
+ReadOnlyPaths=\
+  /var/log \
+  /home/app/.pm2/logs \
+  /root/.pm2/logs
+
+# Allow writing positions file
+ReadWritePaths=\
+  {{ loki_data_dir }}
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

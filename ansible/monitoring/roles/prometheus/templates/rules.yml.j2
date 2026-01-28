@@ -1,0 +1,98 @@
+{% raw %}
+groups:
+  - name: AllInstances
+    rules:
+      - alert: InstanceDown
+        expr: up == 0
+        for: 30s
+        annotations:
+          title: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 30 seconds."
+        labels:
+          severity: critical
+
+      - alert: HostOutOfDiskSpace
+        expr: |
+          (node_filesystem_avail_bytes * 100 / node_filesystem_size_bytes) < 10
+          and ON (instance, device, mountpoint)
+          node_filesystem_readonly == 0
+        for: 2m
+        annotations:
+          summary: "Host out of disk space (instance {{ $labels.instance }})"
+          description: "Disk is almost full (< 10% left)"
+        labels:
+          severity: warning
+
+      - alert: HostDiskWillFillIn24Hours
+        expr: |
+          (node_filesystem_avail_bytes * 100 / node_filesystem_size_bytes) < 10
+          and ON (instance, device, mountpoint)
+          predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0
+          and ON (instance, device, mountpoint)
+          node_filesystem_readonly == 0
+        for: 2m
+        annotations:
+          summary: "Host disk will fill in 24 hours (instance {{ $labels.instance }})"
+          description: "Filesystem is predicted to run out of space within the next 24 hours"
+        labels:
+          severity: warning
+
+      - alert: HostHighCpuLoad
+        expr: |
+          100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 2m
+        annotations:
+          summary: "Host high CPU load (instance {{ $labels.instance }})"
+          description: "CPU load is > 80%"
+        labels:
+          severity: warning
+
+  - name: Linux services
+    rules:
+      - alert: php8.2-fpm
+        expr: node_systemd_unit_state{name="php8.2-fpm.service", state="inactive"} == 1
+        for: 30s
+        annotations:
+          summary: "php8.2-fpm is down (instance {{ $labels.instance }})"
+          description: "php8.2-fpm service is inactive"
+        labels:
+          severity: critical
+
+      - alert: mysql-server
+        expr: node_systemd_unit_state{name="mysql.service", state="inactive"} == 1
+        for: 30s
+        annotations:
+          summary: "MySQL is down (instance {{ $labels.instance }})"
+          description: "MySQL service is inactive"
+        labels:
+          severity: critical
+
+      - alert: nginx
+        expr: node_systemd_unit_state{name="nginx.service", state="inactive"} == 1
+        for: 30s
+        annotations:
+          summary: "NGINX is down (instance {{ $labels.instance }})"
+          description: "NGINX service is inactive"
+        labels:
+          severity: critical
+
+  - name: endpoints
+    rules:
+      - alert: endpoint-down
+        expr: probe_success == 0
+        for: 30s
+        annotations:
+          summary: "Endpoint {{ $labels.instance }} down"
+          description: "Endpoint is unreachable"
+        labels:
+          severity: critical
+
+      - alert: SSL
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 <= 3
+        for: 30s
+        annotations:
+          summary: "Endpoint {{ $labels.instance }} SSL about to expire"
+          description: "SSL certificate expires in less than 3 days"
+        labels:
+          severity: warning
+{% endraw %}

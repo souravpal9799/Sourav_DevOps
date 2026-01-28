@@ -1,0 +1,13 @@
+---
+- name: Create Grafana provisioning directory
+  file:
+    path: /etc/grafana/provisioning/datasources
+    state: directory
+
+- name: Configure Prometheus datasource
+  template:
+    src: loki-datasource.yml.j2
+    dest: /etc/grafana/provisioning/datasources/loki.yml
+    owner: root
+    group: grafana
+    mode: "0640"

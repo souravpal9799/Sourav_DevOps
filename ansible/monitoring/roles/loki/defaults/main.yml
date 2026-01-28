@@ -1,0 +1,12 @@
+# roles/loki/defaults/main.yml
+loki_version: "latest"
+
+loki_user: loki
+loki_group: loki
+
+loki_install_dir: /usr/local/bin
+loki_config_dir: /etc/loki
+loki_data_dir: /var/lib/loki
+
+loki_http_port: 3100
+promtail_http_port: 9080

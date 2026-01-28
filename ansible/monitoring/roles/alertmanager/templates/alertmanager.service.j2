@@ -1,0 +1,15 @@
+[Unit]
+Description=Prometheus Alertmanager
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/alertmanager/alertmanager \
+  --config.file=/etc/alertmanager/alertmanager.yml \
+  --storage.path=/var/lib/alertmanager \
+  --cluster.listen-address=""
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
