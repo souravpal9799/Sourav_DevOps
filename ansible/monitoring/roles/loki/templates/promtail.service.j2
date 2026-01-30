@@ -26,11 +26,11 @@ ProtectHome=false
 ReadOnlyPaths=\
   /var/log \
   /home/app/.pm2/logs \
-  /root/.pm2/logs
+  /root/.pm2/logs \
+  /var/www/
 
 # Allow writing positions file
-ReadWritePaths=\
-  {{ loki_data_dir }}
+ReadWritePaths=/var/lib/loki
 
 LimitNOFILE=65536
 

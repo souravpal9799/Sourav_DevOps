@@ -72,3 +72,22 @@ scrape_configs:
       - labels:
           service:
 
+  - job_name: nodejs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nodejs
+          __path__: /var/www/*/logs/*.log
+
+    pipeline_stages:
+      - regex:
+          source: filename
+          expression: '/var/www/(?P<app>[^/]+)/logs/(?P<log_file>[^/]+)$'
+
+      - labels:
+          app:
+          log_file:
+
+
+
