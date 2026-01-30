@@ -5,6 +5,7 @@ After=network.target
 [Service]
 User=root
 Group=root
+EnvironmentFile=/etc/default/prometheus
 WorkingDirectory=/opt/prometheus
 ExecStart=/opt/prometheus/prometheus --config.file=/opt/prometheus/prometheus.yml --web.enable-lifecycle
 

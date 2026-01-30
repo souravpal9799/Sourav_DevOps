@@ -71,10 +71,18 @@
             "query": "prometheus"
           },
 
-- name: Configure Grafana dashboard provider
+- name: Configure Grafana dashboard for PM2 jobs 
   template:
     src: pm2-log-stream.json.j2
     dest: /var/lib/grafana/dashboards/pm2-log-stream.json
+    owner: root
+    group: grafana
+    mode: "0640"
+
+- name: Configure Grafana dashboard for Custom logs 
+  template:
+    src: node-app-logs.json.j2
+    dest: /var/lib/grafana/dashboards/node-app-logs.json
     owner: root
     group: grafana
     mode: "0640"
