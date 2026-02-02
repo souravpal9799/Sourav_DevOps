@@ -3,3 +3,5 @@ terraform.tfstate
 terraform.tfstate.backup
 keys/terraform-key
 keys/terraform-key.pub
+
+**/*.Identifier
