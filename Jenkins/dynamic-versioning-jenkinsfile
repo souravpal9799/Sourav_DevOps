@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+
+    environment {
+        ARTIFACT_FILE = 'artifact-version.txt'
+    }
+
+    stages {
+        stage('Read Artifact Version') {
+            steps {
+                script {
+                    if (!fileExists(env.ARTIFACT_FILE)) {
+                        writeFile file: env.ARTIFACT_FILE, text: '1.0.0'
+                    }
+
+                    env.ARTIFACT_VERSION = readFile(env.ARTIFACT_FILE).trim()
+                    echo "Artifact version: ${env.ARTIFACT_VERSION}"
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh """
+                  mkdir -p dist
+                  echo "dummy build" > dist/app-${ARTIFACT_VERSION}.jar
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                def parts = env.ARTIFACT_VERSION.tokenize('.')
+                parts[-1] = (parts[-1].toInteger() + 1).toString()
+                def newVersion = parts.join('.')
+
+                writeFile file: env.ARTIFACT_FILE, text: newVersion
+
+                echo "Next artifact version will be: ${newVersion}"
+            }
+        }
+    }
+}

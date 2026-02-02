@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    parameters {
+        // to add a new parameter, add a new string parameter with the name, defaultValue, and description
+        // the name is the name of the parameter, 
+        // the defaultValue is the default value of the parameter
+        // the description is the description of the parameter
+        // the parameter is used to pass the value to the Jenkinsfile
+        string(name: 'ENV', defaultValue: 'dev', description: 'Target environment')
+        string(name: 'PORT', defaultValue: '3000', description: 'Application Port')
+        string(name: 'DB_USER', defaultValue: 'user')
+        string(name: 'DB_PASSWORD', defaultValue: 'password')
+        string(name: 'DB_HOST', defaultValue: '127.0.0.1')
+    }
+
+    stages {
+        stage('Create / Update .env') {
+            steps {
+                sh '''
+                    #Change the path in the ENV_FILE variable to your .env file path
+                    ENV_FILE="/var/lib/jenkins/environment/.env"
+
+                    # Create .env if it doesn't exist
+                    touch "$ENV_FILE"
+
+                    replace_or_add () {
+                        local KEY="$1"
+                        local VALUE="$2"
+
+                        grep -q "^${KEY}=" "$ENV_FILE" \
+                          && sed -i "s|^${KEY}=.*|${KEY}=${VALUE}|g" "$ENV_FILE" \
+                          || echo "${KEY}=${VALUE}" >> "$ENV_FILE"
+                    }
+
+                    replace_or_add "ENV" "$ENV"
+                    replace_or_add "PORT" "$PORT"
+                    replace_or_add "DB_HOST" "$DB_HOST"
+                    replace_or_add "DB_USER" "$DB_USER"
+                    replace_or_add "DB_PASSWORD" "$DB_PASSWORD"
+
+                    echo "Final .env (values masked by Jenkins if sensitive):"
+                    cat "$ENV_FILE"
+                '''
+            }
+        }
+    }
+}
