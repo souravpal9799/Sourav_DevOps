@@ -1,0 +1,80 @@
+// make sure to define the variables and credentails to the jenkins "Credentails" which you can find in the "manage jankins" option
+pipeline {
+    agent any
+    environment {
+        CI = 'true'
+        TAG = "${BUILD_NUMBER}"
+        REGISTRY = 'ghcr.io'
+        // 
+        IMAGE = 'ghcr.io/<github_user_name>/<image_name>'
+        CODE_DIR = "/var/www/simple-node-js-react-npm-app" // make sure to change this direcrotry to your original or the remote server direcroty 
+        
+        //ENV Details which are defined in the Credentails manager of jenkins 
+        DB_HOST = credentials('DB_HOST')
+        DB_USER = credentials('DB_USER')
+        DB_PASSWORD = credentials('DB_PASSWORD')
+    }
+    stages {
+        stage('SCM Checkout') {
+            steps {
+                cleanWs()
+                // GIT_PAT is defined in the Jenkins Crendentails 
+                git credentialsId: 'GIT_PAT', url: '<Your_github_repo_url>'
+            }
+        }
+        stage('Setting Up ENV') {
+            steps {
+                // Setting the secrets from credentail manager to an .env file for build 
+                sh '''
+                    cp ~/environment/.env .
+                    sed -i \
+                      -e "s|^DB_HOST=.*|DB_HOST=${DB_HOST}|g" \
+                      -e "s|^DB_USER=.*|DB_USER=${DB_USER}|g" \
+                      -e "s|^DB_PASSWORD=.*|DB_PASSWORD=${DB_PASSWORD}|g" \
+                      .env
+                '''
+                }
+        }
+        stage('Login to ghcr.io') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'GIT_PAT',
+                    usernameVariable: 'GH_USER',
+                    passwordVariable: 'GH_TOKEN'
+                )]) {
+                    // using the github repository for storing docker images
+                    sh '''
+                        echo "$GH_TOKEN" | docker login $REGISTRY \
+                          -u "$GH_USER" --password-stdin
+                    '''
+                }
+            }
+        }
+        stage('Build') {
+            steps {
+                sh 'cd ${CODE_DIR}'
+                echo "Installing the Packages..."
+                sh 'docker build -t ${IMAGE}:${TAG} .'  
+            }
+        }
+        stage('Push') {
+            steps {
+                sh '''
+                    echo "Pushing image to the repository now..."
+                    docker push $IMAGE:${TAG}
+                '''
+            }
+        }
+        stage('Deliver') {
+            steps {
+                
+                sh '''
+                    echo "Deploying the code..."
+                    docker stop frontend
+                    docker rm frontend
+                    docker run -d -p 3000:3000 --name frontend ${IMAGE}:${TAG}
+                '''
+            }
+        }
+    }
+}
