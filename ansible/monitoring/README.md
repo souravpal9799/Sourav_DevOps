@@ -316,10 +316,3 @@ It is:
 * Repeatable
 * Idempotent
 * Environment‑agnostic
-
-If you want, I can:
-
-* Create a **README.md**
-* Draw **architecture diagrams**
-* Add **blue/green monitoring separation**
-* Harden it for **production security**
