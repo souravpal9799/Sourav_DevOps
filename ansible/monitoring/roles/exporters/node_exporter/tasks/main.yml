@@ -18,20 +18,19 @@
 - name: Extract Node Exporter
   unarchive:
     src: /tmp/node_exporter.tar.gz
-    dest: /usr/local/bin/
+    dest: /opt/
     remote_src: yes
-    creates: "/usr/local/bin/node_exporter-{{ node_exporter_ver }}.linux-amd64"
+    creates: "/opt/node_exporter-{{ node_exporter_ver }}.linux-amd64"
 
-- name: Create Node Exporter symlink
-  file:
-    src: "/usr/local/bin/node_exporter-{{ node_exporter_ver }}.linux-amd64"
-    dest: /usr/local/bin/node_exporter
-    state: link
-    force: yes
+- name: Rename Node Exporter directory
+  command: >
+    mv /opt/node_exporter-{{ node_exporter_ver }}.linux-amd64 /opt/node_exporter
+  args:
+    creates: /opt/node_exporter
 
 - name: Ensure node_exporter binary is executable
   file:
-    path: /usr/local/bin/node_exporter/node_exporter
+    path: /opt/node_exporter/node_exporter
     mode: '0755'
 
 - name: Deploy systemd service

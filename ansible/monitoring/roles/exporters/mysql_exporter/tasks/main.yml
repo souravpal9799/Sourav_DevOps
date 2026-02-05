@@ -1,25 +1,19 @@
 ---
-- name: Create mysql_exporter user
-  user:
-    name: mysql_exporter
-    shell: /usr/sbin/nologin
-    system: yes
-
 - name: Download mysql_exporter
   get_url:
     url: https://github.com/prometheus/mysqld_exporter/releases/download/v{{ mysql_exporter_version }}/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64.tar.gz
-    dest: /usr/local/src/
+    dest: /tmp/
 
 - name: Extract mysql_exporter
   unarchive:
-    src: /usr/local/src/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64.tar.gz
-    dest: /usr/local/src/
+    src: /tmp/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64.tar.gz
+    dest: /tmp/
     remote_src: yes
 
 - name: Install mysql_exporter binary
   copy:
-    src: /usr/local/src/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64/mysqld_exporter
-    dest: /usr/local/bin/mysqld_exporter
+    src: /tmp/mysqld_exporter-{{ mysql_exporter_version }}.linux-amd64/mysqld_exporter
+    dest: /opt/mysqld_exporter
     mode: '0755'
     remote_src: yes
 
@@ -27,14 +21,14 @@
   file:
     path: /etc/mysql_exporter
     state: directory
-    owner: mysql_exporter
+    owner: root
     mode: '0750'
 
 - name: Deploy MySQL exporter config
   template:
     src: my.cnf.j2
     dest: /etc/mysql_exporter/.my.cnf
-    owner: mysql_exporter
+    owner: root
     mode: '0600'
   notify: restart mysql_exporter
 

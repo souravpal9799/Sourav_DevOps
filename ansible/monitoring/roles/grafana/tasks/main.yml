@@ -29,7 +29,14 @@
     rm -f /etc/systemd/system/grafana-server.service
     rm -f /etc/init.d/grafana-server
     systemctl daemon-reload 2>/dev/null || true
+    apt purge grafana grafana-enterprise -y
+    apt autoremove -y
   ignore_errors: yes
+
+# But for now, let's fix the order:
+- name: Reload systemd
+  systemd:
+    daemon_reload: yes
 
 - name: Create apt keyrings directory
   file:
@@ -81,7 +88,7 @@
     content: |
       # Minimal Grafana configuration
       [server]
-      http_port = 3030
+      http_port = 4000
       domain = localhost
       root_url = %(protocol)s://%(domain)s:%(http_port)s/
       serve_from_sub_path = false
@@ -154,42 +161,42 @@
     mode: "0644"
 
 # Fix the systemd service configuration
-- name: Fix Grafana systemd service file
-  copy:
-    dest: /usr/lib/systemd/system/grafana-server.service
-    content: |
-      [Unit]
-      Description=Grafana instance
-      Documentation=http://docs.grafana.org
-      Wants=network-online.target
-      After=network-online.target
+# - name: Fix Grafana systemd service file
+#   copy:
+#     dest: /usr/lib/systemd/system/grafana-server.service
+#     content: |
+#       [Unit]
+#       Description=Grafana instance
+#       Documentation=http://docs.grafana.org
+#       Wants=network-online.target
+#       After=network-online.target
       
-      [Service]
-      EnvironmentFile=-/etc/default/grafana-server
-      User=grafana
-      Group=grafana
-      Type=simple
-      Restart=on-failure
-      WorkingDirectory=/usr/share/grafana
-      ExecStart=/usr/sbin/grafana-server \
-        --config=/etc/grafana/grafana.ini \
-        --pidfile=/var/run/grafana/grafana-server.pid \
-        cfg:default.paths.data=/var/lib/grafana \
-        cfg:default.paths.logs=/var/log/grafana \
-        cfg:default.paths.plugins=/var/lib/grafana/plugins
-      LimitNOFILE=10000
-      TimeoutStopSec=20
-      ProtectSystem=full
-      ProtectHome=true
-      ReadWritePaths=/var/lib/grafana /var/log/grafana /etc/grafana
-      PrivateTmp=true
+#       [Service]
+#       EnvironmentFile=-/etc/default/grafana-server
+#       User=root
+#       Group=root
+#       Type=simple
+#       Restart=on-failure
+#       WorkingDirectory=/usr/share/grafana
+#       ExecStart=/usr/sbin/grafana-server \
+#         --config=/etc/grafana/grafana.ini \
+#         --pidfile=/var/run/grafana/grafana-server.pid \
+#         cfg:default.paths.data=/var/lib/grafana \
+#         cfg:default.paths.logs=/var/log/grafana \
+#         cfg:default.paths.plugins=/var/lib/grafana/plugins
+#       LimitNOFILE=10000
+#       TimeoutStopSec=20
+#       ProtectSystem=full
+#       ProtectHome=true
+#       ReadWritePaths=/var/lib/grafana /var/log/grafana /etc/grafana
+#       PrivateTmp=true
       
-      [Install]
-      WantedBy=multi-user.target
-    owner: root
-    group: root
-    mode: "0644"
-  notify: Reload systemd
+#       [Install]
+#       WantedBy=multi-user.target
+#     owner: root
+#     group: root
+#     mode: "0644"
+#   notify: Reload systemd
 
 # Include other tasks
 - include_tasks: prometheus_dashboard.yml
@@ -199,7 +206,6 @@
 - name: Reload systemd
   systemd:
     daemon_reload: yes
-  when: false  # We'll handle this with notify
 
 - name: Enable and start Grafana
   systemd:

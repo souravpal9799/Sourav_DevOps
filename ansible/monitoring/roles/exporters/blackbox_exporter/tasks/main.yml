@@ -12,7 +12,7 @@
 
 - name: Create install directory
   file:
-    path: /usr/local/bin
+    path: /opt
     state: directory
     owner: root
     group: root
@@ -25,20 +25,20 @@
 - name: Extract blackbox exporter
   unarchive:
     src: /tmp/blackbox.tar.gz
-    dest: /usr/local/bin/
+    dest: /opt/
     remote_src: yes
-    creates: "/usr/local/bin/blackbox_exporter-{{ blackbox_exporter_ver }}.linux-amd64"
+    creates: "/opt/blackbox_exporter-{{ blackbox_exporter_ver }}.linux-amd64"
 
 - name: Install binary
   command: >
-    mv /usr/local/bin/blackbox_exporter-{{ blackbox_exporter_ver }}.linux-amd64 /usr/local/bin/blackbox
+    mv /opt/blackbox_exporter-{{ blackbox_exporter_ver }}.linux-amd64 /opt/blackbox
   args:
-    creates: /usr/local/bin/blackbox
+    creates: /opt/blackbox
 
 - name: Deploy blackbox config
   template:
     src: blackbox.yml.j2
-    dest: "/usr/local/bin/blackbox/blackbox.yml"
+    dest: "/opt/blackbox/blackbox.yml"
   notify: restart blackbox
 
 - name: Deploy systemd service

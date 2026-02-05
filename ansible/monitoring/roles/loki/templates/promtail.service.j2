@@ -9,7 +9,7 @@ Type=simple
 User=root
 Group=root
 
-ExecStart=/usr/local/bin/loki/promtail-linux-amd64 \
+ExecStart=/opt/loki/promtail-linux-amd64 \
   -config.file=/etc/loki/promtail.yml \
   -config.expand-env=true
 
@@ -25,7 +25,6 @@ ProtectHome=false
 # Allow Promtail to read logs
 ReadOnlyPaths=\
   /var/log \
-  /home/app/.pm2/logs \
   /root/.pm2/logs \
   /var/www/
 

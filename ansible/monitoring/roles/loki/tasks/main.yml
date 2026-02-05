@@ -22,7 +22,7 @@
     group: root
     mode: '0755'
   loop:
-    - "/usr/local/bin/loki"
+    - "/opt/loki"
     - "/etc/loki"
     - "/var/lib/loki"
     - "/var/lib/loki/promtail"
@@ -47,27 +47,27 @@
 - name: Extract Loki
   unarchive:
     src: "/tmp/loki-{{ loki_version }}.zip"
-    dest: "/usr/local/bin/loki"
+    dest: "/opt/loki"
     remote_src: yes
-    creates: "/usr/local/bin/loki/loki-linux-amd64"
+    creates: "/opt/loki/loki-linux-amd64"
 
 - name: Extract Promtail
   unarchive:
     src: "/tmp/promtail-{{ loki_version }}.zip"
-    dest: "/usr/local/bin/loki"
+    dest: "/opt/loki"
     remote_src: yes
-    creates: "/usr/local/bin/loki/promtail-linux-amd64"
+    creates: "/opt/loki/promtail-linux-amd64"
 
 - name: Set Loki binary permissions
   file:
-    path: "/usr/local/bin/loki/loki-linux-amd64"
+    path: "/opt/loki/loki-linux-amd64"
     owner: root
     group: root
     mode: '0755'
 
 - name: Set Promtail binary permissions
   file:
-    path: "/usr/local/bin/loki/promtail-linux-amd64"
+    path: "/opt/loki/promtail-linux-amd64"
     owner: root
     group: root
     mode: '0755'

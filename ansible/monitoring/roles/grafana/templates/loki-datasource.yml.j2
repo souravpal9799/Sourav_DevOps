@@ -5,7 +5,7 @@ datasources:
     type: loki
     uid: DS_LOKI
     access: proxy
-    url: http://{{ private_ip_addr }}:{{ loki_port }}
+    url: http://{{ hostvars['web'].private_ip_addr }}:{{ loki_port }}
     isDefault: false
     jsonData:
       maxLines: 1000

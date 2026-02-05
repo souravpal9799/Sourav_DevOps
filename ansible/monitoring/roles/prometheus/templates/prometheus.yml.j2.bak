@@ -1,0 +1,162 @@
+# templates/prometheus.yml.j2
+
+global:
+  scrape_interval: {{ scrape_interval | default('30s') }}
+  evaluation_interval: {{ evaluation_interval | default('30s') }}
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+{% for target in alertmanager_targets %}
+            - {{ target }}
+{% endfor %}
+
+rule_files:
+{% for rule in rule_files %}
+  - {{ rule }}
+{% endfor %}
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+{% for target in prometheus_targets %}
+          - {{ target }}
+{% endfor %}
+
+  - job_name: node_exporter
+    static_configs:
+{% for host in groups['all']
+   if hostvars[host].exporters is defined
+   and hostvars[host].exporters.node | default(false) %}
+      - targets:
+          - {{ hostvars[host].public_ip_addr }}:{{ node_exporter_port }}
+        labels:
+          hostname: "{{ host }}"
+{% endfor %}
+
+  - job_name: prometheus_nats_exporter
+    static_configs:
+{% for host in groups['all']
+   if hostvars[host].exporters is defined
+   and hostvars[host].exporters.nats | default(false) %}
+      - targets:
+          - {{ hostvars[host].public_ip_addr }}:{{ nats_exporter_port }}
+        labels:
+          hostname: "{{ host }}"
+{% endfor %}
+
+  - job_name: xhttp_prom
+    static_configs:
+{% for host in groups['all']
+   if hostvars[host].exporters is defined
+   and hostvars[host].exporters.xhttp | default(false) %}
+      - targets:
+          - {{ hostvars[host].public_ip_addr }}:{{ xhttp_prom_port }}
+        labels:
+          hostname: "{{ host }}"
+{% endfor %}
+
+{% for site, urls in blackbox_urls.items() %}
+  - job_name: "blackbox {{ site }}"
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+{% for url in urls %}
+          - {{ url }}
+{% endfor %}
+{% if site == 'ringtere' %}
+{%   for port in range(3000, 3007) %}
+          - http://{{ hostvars[site]['private_ip_addr'] }}:{{ port }}
+{%   endfor %}
+{% elif site == 'phone' %}
+{%   for port in [3000, 3001, 3002, 3003, 3004, 3005, 3011] %}
+          - http://{{ hostvars[site]['private_ip_addr'] }}:{{ port }}
+{%   endfor %}
+{% endif %}
+        labels:
+          hostname: "{{ site }}"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: "{{ blackbox_ips[site] }}:{{ blackbox_exporter_port }}"
+{% endfor %}
+
+  - job_name: blackbox_nginx_http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+{% for host in groups['all']
+   if hostvars[host].exporters is defined
+   and hostvars[host].exporters.nginx | default(false) %}
+      - targets:
+          - http://{{ hostvars[host].public_ip_addr }}:80
+        labels:
+          hostname: "{{ host }}"
+          blackbox_addr: "{{ blackbox_ips[host] }}:{{ blackbox_exporter_port }}"
+{% endfor %}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - source_labels: [blackbox_addr]
+        target_label: __address__
+
+  - job_name: blackbox_nginx_https
+    metrics_path: /probe
+    params:
+      module: [https_2xx]
+    static_configs:
+{% for host in groups['all']
+   if hostvars[host].exporters is defined
+   and hostvars[host].exporters.nginx | default(false) %}
+      - targets:
+          - https://{{ hostvars[host].public_ip_addr }}:443
+        labels:
+          hostname: "{{ host }}"
+          blackbox_addr: "{{ blackbox_ips[host] }}:{{ blackbox_exporter_port }}"
+{% endfor %}
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - source_labels: [blackbox_addr]
+        target_label: __address__
+
+  - job_name: blackbox_tcp_ports
+    metrics_path: /probe
+    params:
+      module: [tcp_connect]
+
+    static_configs:
+{% for host in groups['all'] %}
+{% for port in blackbox_tcp_ports %}
+    - targets:
+        - {{ hostvars[host].public_ip_addr }}:{{ port }}
+      labels:
+        hostname: "{{ host }}"
+        port: "{{ port }}"
+        blackbox_addr: "{{ blackbox_ips[host] }}:{{ blackbox_exporter_port }}"
+{% endfor %}
+{% endfor %}
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+
+      - source_labels: [__param_target]
+        target_label: instance
+
+      - source_labels: [blackbox_addr]
+        target_label: __address__
+
+

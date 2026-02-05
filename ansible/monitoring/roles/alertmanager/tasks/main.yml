@@ -18,20 +18,20 @@
 - name: Extract Alertmanager
   unarchive:
     src: "/tmp/alertmanager-{{ alertmanager_version }}.tar.gz"
-    dest: /usr/local/bin/
+    dest: /opt/
     remote_src: yes
-    creates: "/usr/local/bin/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64"
+    creates: "/opt/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64"
 
 - name: Ensure Alertmanager binary executable
   file:
-    path: "/usr/local/bin/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64/alertmanager"
+    path: "/opt/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64/alertmanager"
     mode: '0755'
 
 - name: Update Alertmanager directory
   command: >
-    mv /usr/local/bin/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64 /usr/local/bin/alertmanager
+    mv /opt/alertmanager-{{ alertmanager_version[1:] }}.linux-amd64 /opt/alertmanager
   args:
-    creates: /usr/local/bin/alertmanager
+    creates: /opt/alertmanager
 
 - name: Create Alertmanager config directory
   file:

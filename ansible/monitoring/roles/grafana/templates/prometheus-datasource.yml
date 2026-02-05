@@ -5,7 +5,7 @@ datasources:
     type: prometheus
     uid: prometheus
     access: proxy
-    url: http://{{ private_ip_addr }}:{{ prometheus_port }}
+    url: http://{{ hostvars['web'].private_ip_addr }}:{{ prometheus_port }}
     isDefault: true
     editable: false
 
