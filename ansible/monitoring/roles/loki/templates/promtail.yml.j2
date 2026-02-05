@@ -78,12 +78,12 @@ scrape_configs:
           - localhost
         labels:
           job: nodejs
-          __path__: /var/www/*/logs/*.log
+          __path__: /var/www/prod/*/logs/*.log
 
     pipeline_stages:
       - regex:
           source: filename
-          expression: '/var/www/(?P<app>[^/]+)/logs/(?P<log_file>[^/]+)$'
+          expression: '/var/www/prod/(?P<app>[^/]+)/logs/(?P<log_file>[^/]+)$'
 
       - labels:
           app:

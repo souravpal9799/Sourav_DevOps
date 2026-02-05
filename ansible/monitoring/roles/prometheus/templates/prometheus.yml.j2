@@ -60,7 +60,7 @@ scrape_configs:
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: "{{ hostvars['monitoring'].private_ip_addr }}:{{ blackbox_exporter_port }}"
+        replacement: "{{ hostvars['web'].private_ip_addr }}:{{ blackbox_exporter_port }}"
 {% endfor %}
 
   # -------------------------------------------------
@@ -83,7 +83,7 @@ scrape_configs:
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: "{{ hostvars['monitoring'].private_ip_addr }}:{{ blackbox_exporter_port }}"
+        replacement: "{{ hostvars['web'].private_ip_addr }}:{{ blackbox_exporter_port }}"
 
   # -------------------------------------------------
   # Blackbox HTTPS (web servers)
@@ -105,7 +105,7 @@ scrape_configs:
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: "{{ hostvars['monitoring'].private_ip_addr }}:{{ blackbox_exporter_port }}"
+        replacement: "{{ hostvars['web'].private_ip_addr }}:{{ blackbox_exporter_port }}"
 
   # -------------------------------------------------
   # Blackbox TCP ports (web servers)
@@ -130,4 +130,4 @@ scrape_configs:
       - source_labels: [__param_target]
         target_label: instance
       - target_label: __address__
-        replacement: "{{ hostvars['monitoring'].private_ip_addr }}:{{ blackbox_exporter_port }}"
+        replacement: "{{ hostvars['web'].private_ip_addr }}:{{ blackbox_exporter_port }}"
