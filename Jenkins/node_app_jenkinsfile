@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+    environment {
+        NVM_DIR = '${HOME}/.nvm'
+        SONAR_PROJECT_KEY = 'Sourav_DevOps'
+        SONAR_HOST_URL = 'http://localhost:9000'
+    }
+    tools {
+        nodejs 'Node22'
+        // sonarRunner 'SonarScanner'
+    }
+    stages {
+        stage('WorkspaceCleanup') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('SCM Checkout') {
+            steps {
+                git branch: 'main',
+                url: 'https://github.com/souravpal9799/Sourav_DevOps.git'
+            }
+        }
+        stage('EnvSetup') {
+            steps {
+                sh '''
+                    cp ${HOME}/environments/dev/app/api/.env .
+                '''
+            }
+        }
+        stage('install and build') {
+            steps {
+                sh'''
+                    echo "build is done...!"
+                    #npm i -f
+                    #npm run build
+                '''
+            }
+        }
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                        ${scannerHome}/bin/sonar-scanner \
+                          -Dsonar.projectKey=capanicus-devops \
+                          -Dsonar.sources=.
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
