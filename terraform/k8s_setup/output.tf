@@ -1,3 +1,7 @@
-output "public_ip" {
-  value = module.ec2.public_ip
+output "master_public_ip" {
+  value = module.master.public_ip
+}
+
+output "worker_public_ip" {
+  value = module.worker.public_ip
 }

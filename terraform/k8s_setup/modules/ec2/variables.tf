@@ -29,5 +29,12 @@ variable "ssh_cidr" {
   default = ["0.0.0.0/0"]
 }
 variable "sg_name" {
-  type    = string
+  description = "List of security group IDs to attach to the instance"
+  type        = list(string)
+}
+
+variable "user_data" {
+  description = "User data script to run at instance launch"
+  type        = string
+  default     = null
 }

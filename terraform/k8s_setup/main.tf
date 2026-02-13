@@ -21,26 +21,23 @@ module "master" {
   name          = "kube-master"
   instance_type = "t2.micro"
 
-  subnet_id     = module.vpc.subnet_id
-  vpc_id    = module.vpc.vpc_id
-  sg_id     = module.sg_id
-  
-  key_name      = module.keypair.key_name
-  role            = "master"
-  user_data       = file("userdata/master.sh")
+  subnet_id  = module.vpc.subnet_id
+  vpc_id     = module.vpc.vpc_id
+  sg_name    = [module.sg.sg_id]
+
+  key_name   = module.keypair.key_name
+  user_data  = file("userdata/master.sh")
 }
 
 module "worker" {
   source        = "./modules/ec2"
-  name          = "kuber-worker"
+  name          = "kube-worker"
   instance_type = "t2.micro"
 
-  subnet_id     = module.vpc.subnet_id
-  vpc_id    = module.vpc.vpc_id
-  sg_id     = module.sg_id
+  subnet_id  = module.vpc.subnet_id
+  vpc_id     = module.vpc.vpc_id
+  sg_name    = [module.sg.sg_id]
 
-  key_name      = module.keypair.key_name
-  role            = "worker"
-  user_data       = file("userdata/worker.sh")
-  
+  key_name   = module.keypair.key_name
+  user_data  = file("userdata/worker.sh")
 }
