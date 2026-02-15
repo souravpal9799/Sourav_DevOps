@@ -19,7 +19,7 @@ module "sg" {
 module "master" {
   source        = "./modules/ec2"
   name          = "kube-master"
-  instance_type = "t2.micro"
+  instance_type = "t3.medium"
 
   subnet_id  = module.vpc.subnet_id
   vpc_id     = module.vpc.vpc_id
@@ -32,7 +32,7 @@ module "master" {
 module "worker" {
   source        = "./modules/ec2"
   name          = "kube-worker"
-  instance_type = "t2.micro"
+  instance_type = "t3.medium"
 
   subnet_id  = module.vpc.subnet_id
   vpc_id     = module.vpc.vpc_id

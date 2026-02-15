@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars and set your values
+# Default region and AZs: ap-south-1 (Mumbai)
+# If you hit VPC limit: set use_existing_vpc = true and pass existing_vpc_id + existing_public_subnet_ids
+
+environment     = "dev"
+cluster_name    = "my-eks-cluster"
+cluster_version = "1.29"
+
+# Use existing VPC (e.g. when at VPC limit) – uncomment and set IDs:
+# use_existing_vpc        = true
+# existing_vpc_id         = "vpc-xxxxxxxxx"
+# existing_public_subnet_ids = ["subnet-aaaaaaaa", "subnet-bbbbbbbb"]
+
+vpc_cidr = "10.0.0.0/16"
+
+node_instance_types = ["t3.medium"]
+node_desired_size   = 2
+node_min_size       = 1
+node_max_size       = 4

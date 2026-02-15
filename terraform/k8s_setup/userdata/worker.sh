@@ -46,5 +46,7 @@ sudo apt update -y
 sudo apt install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
+sudo hostnamectl set-hostname kube-worker1
+
 echo "Common setup complete!"
 

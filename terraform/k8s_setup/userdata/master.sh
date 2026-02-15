@@ -48,28 +48,48 @@ sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "Common setup complete!"
 
-######################################################################
 
-echo "Fetching Public IP..."
-PUBLIC_IP=$(curl -s https://ipinfo.io/ip)
+sudo hostnamectl set-hostname kube-master
 
-echo "Master Public IP: $PUBLIC_IP"
+echo "Fetching Private IP..."
+PRIVATE_IP=$(hostname -I | awk '{print $1}')
+
+echo "Master Private IP: $PRIVATE_IP"
 
 echo "Initializing Kubernetes master..."
 
-kubeadm init \
-  --apiserver-advertise-address=$PUBLIC_IP \
-  --pod-network-cidr=192.168.0.0/16
+KUBEADM_OUTPUT="/tmp/kubeadm-init-output.txt"
+sudo kubeadm init \
+  --apiserver-advertise-address=$PRIVATE_IP \
+  --pod-network-cidr=192.168.0.0/16 2>&1 | sudo tee "$KUBEADM_OUTPUT"
+
+# Extract and save the join command for worker nodes
+WORKER_JOIN_FILE="/home/ubuntu/worker-join.txt"
+sudo awk '/kubeadm join/{found=1} found{print; if(/\\$/){next} else exit}' "$KUBEADM_OUTPUT" | \
+  tr -d '\n' | sed 's/\\//g' | sed 's/  */ /g' | sed 's/^[[:space:]]*//' | sudo tee "$WORKER_JOIN_FILE" > /dev/null
+sudo chown ubuntu:ubuntu "$WORKER_JOIN_FILE" 2>/dev/null || true
+
+echo "Join command saved to $WORKER_JOIN_FILE"
 
 echo "Setting up kubeconfig..."
 
+# For root (userdata runs as root)
 mkdir -p $HOME/.kube
-cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-chown $(id -u):$(id -g) $HOME/.kube/config
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# For ubuntu user (so kubectl works when you SSH in as ubuntu)
+UBUNTU_HOME="/home/ubuntu"
+if [ -d "$UBUNTU_HOME" ]; then
+  sudo mkdir -p "$UBUNTU_HOME/.kube"
+  sudo cp -i /etc/kubernetes/admin.conf "$UBUNTU_HOME/.kube/config"
+  sudo chown -R ubuntu:ubuntu "$UBUNTU_HOME/.kube"
+fi
 
 echo "Installing Calico CNI..."
-kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
+sudo kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml
 
 echo ""
 echo "Master setup complete!"
-echo "Run the kubeadm join command displayed above on worker nodes."
+echo "To add workers: copy /home/ubuntu/worker-join.txt to each worker and run:"
+echo "  sudo \$(cat /home/ubuntu/worker-join.txt)"
