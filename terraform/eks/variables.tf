@@ -11,7 +11,7 @@ variable "cluster_name" {
 
 variable "cluster_version" {
   type        = string
-  default     = "1.30"
+  default     = "1.31"
   description = "Kubernetes version for the EKS cluster"
 }
 
@@ -37,6 +37,17 @@ variable "existing_public_subnet_ids" {
   type        = list(string)
   default     = []
   description = "Existing public subnet IDs for EKS (required when use_existing_vpc = true; 2+ in different AZs)"
+}
+
+variable "existing_private_subnet_ids" {
+  description = "Private subnet IDs when using existing VPC"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = !var.use_existing_vpc || length(var.existing_private_subnet_ids) > 0
+    error_message = "existing_private_subnet_ids must be provided when use_existing_vpc is true."
+  }
 }
 
 variable "vpc_cidr" {

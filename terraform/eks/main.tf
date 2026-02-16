@@ -11,10 +11,21 @@ module "vpc" {
 }
 
 locals {
-  vpc_id           = var.use_existing_vpc ? var.existing_vpc_id : module.vpc[0].vpc_id
-  public_subnet_ids = var.use_existing_vpc ? var.existing_public_subnet_ids : module.vpc[0].public_subnet_ids
-  private_subnet_ids = var.use_existing_vpc ? [] : module.vpc[0].private_subnet_ids
+  vpc_id = var.use_existing_vpc ? var.existing_vpc_id : module.vpc[0].vpc_id
+
+  public_subnet_ids = (
+    var.use_existing_vpc
+      ? var.existing_public_subnet_ids
+      : module.vpc[0].public_subnet_ids
+  )
+
+  private_subnet_ids = (
+    var.use_existing_vpc
+      ? var.existing_private_subnet_ids
+      : module.vpc[0].private_subnet_ids
+  )
 }
+
 
 # EKS cluster and node group (public subnets: internet access and reachable from internet)
 module "eks" {
@@ -28,6 +39,8 @@ module "eks" {
   node_desired_size   = var.node_desired_size
   node_min_size       = var.node_min_size
   node_max_size       = var.node_max_size
+  
+  depends_on = [module.vpc]
 
   tags = {
     Environment = var.environment
