@@ -1,0 +1,80 @@
+# Development environment overrides
+replicaCount: 1
+
+image:
+  tag: "develop"
+  pullPolicy: Always
+
+environment: development
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+
+ingress:
+  enabled: true
+  hosts:
+    - host: enterprise-app-dev.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: enterprise-app-dev-tls
+      hosts:
+        - enterprise-app-dev.example.com
+
+# Development database configuration
+database:
+  enabled: true
+  host: postgres-dev.default.svc.cluster.local
+  port: 5432
+  name: enterprise_app_dev
+  user: dev_user
+  passwordSecret:
+    name: postgres-dev-secret
+    key: password
+
+# Development redis configuration
+redis:
+  enabled: true
+  host: redis-dev.default.svc.cluster.local
+  port: 6379
+
+# More lenient probes for development
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 20
+  timeoutSeconds: 10
+  failureThreshold: 5
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 5
+
+# Development logging
+env:
+  LOG_LEVEL: "debug"
+  ENVIRONMENT: "development"
+
+# Disable network policies in dev
+networkPolicy:
+  enabled: false
+
+# Disable PDB in dev
+podDisruptionBudget:
+  enabled: false

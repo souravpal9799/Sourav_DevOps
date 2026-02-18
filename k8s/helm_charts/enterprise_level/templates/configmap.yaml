@@ -1,0 +1,17 @@
+{{- if .Values.configMap.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "enterprise-app.fullname" . }}
+  labels:
+    {{- include "enterprise-app.labels" . | nindent 4 }}
+data:
+  {{- with .Values.configMap.data }}
+  {{- toYaml . | nindent 2 }}
+  {{- else }}
+  # Add your configuration data here
+  app.properties: |
+    # Application configuration
+    environment={{ .Values.environment }}
+  {{- end }}
+{{- end }}

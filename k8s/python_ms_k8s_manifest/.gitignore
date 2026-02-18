@@ -1,0 +1,37 @@
+# Python byte-compiled files
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*venv*
+
+# Database files
+*.db
+backend/doctors.db
+backend/static/doctors.db
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environment
+venv/
+env/
+.env/
+.venv/
+Lib/
+Scripts/
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment variables
+.env
+
+# Operating System
+.DS_Store
+Thumbs.db
