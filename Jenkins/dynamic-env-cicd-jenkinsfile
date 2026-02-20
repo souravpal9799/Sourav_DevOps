@@ -1,0 +1,186 @@
+pipeline {
+    agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    parameters {
+        choice(
+            name: 'REPO',
+            choices: ['repo1', 'repo2', 'repo3'],
+            description: 'Select repository'
+        )
+
+        choice(
+            name: 'BRANCH',
+            choices: [
+                'develop',
+                'qa',
+                'main'
+            ],
+            description: 'Branch determines environment'
+        )
+    }
+
+    environment {
+        VERSION_FILE = "VERSION"
+    }
+
+    stages {
+
+        // ----------------------------------
+        // Determine Environment
+        // ----------------------------------
+        stage('Determine Environment') {
+            steps {
+                script {
+
+                    if (params.BRANCH == 'develop') {
+                        env.DEPLOY_ENV = 'dev'
+                        env.TARGET_SERVER = '10.0.0.11'
+                    }
+                    else if (params.BRANCH == 'qa') {
+                        env.DEPLOY_ENV = 'qa'
+                        env.TARGET_SERVER = '10.0.0.12'
+                    }
+                    else if (params.BRANCH in ['main', 'master']) {
+                        env.DEPLOY_ENV = 'prod'
+                        env.TARGET_SERVER = '10.0.0.13'
+                    }
+                    else {
+                        error "Branch ${params.BRANCH} not mapped to any environment"
+                    }
+
+                    env.ENV_FILE = "${HOME}/environments/${env.DEPLOY_ENV}/${params.REPO}.env"
+
+                    echo "Environment: ${env.DEPLOY_ENV}"
+                    echo "Server: ${env.TARGET_SERVER}"
+                    echo "ENV file: ${env.ENV_FILE}"
+                }
+            }
+        }
+
+        // ----------------------------------
+        // Validate ENV
+        // ----------------------------------
+        stage('Validate ENV file') {
+            steps {
+                script {
+                    if (!fileExists(env.ENV_FILE)) {
+                        error "ENV file not found: ${env.ENV_FILE}"
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------
+        // Checkout
+        // ----------------------------------
+        stage('Checkout Code') {
+            steps {
+                git(
+                    url: "git@github.com:your-org/${params.REPO}.git",
+                    branch: params.BRANCH
+                )
+            }
+        }
+
+        // ----------------------------------
+        // Load ENV
+        // ----------------------------------
+        stage('Load Environment') {
+            steps {
+                script {
+                    def props = readProperties file: env.ENV_FILE
+                    props.each { k, v -> env[k] = v }
+                }
+            }
+        }
+
+        // ----------------------------------
+        // Install Dependencies
+        // ----------------------------------
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    echo "Installing dependencies..."
+
+                    if [ -f package.json ]; then
+                        npm install
+                    elif [ -f requirements.txt ]; then
+                        pip install -r requirements.txt
+                    elif [ -f pom.xml ]; then
+                        mvn clean install -DskipTests
+                    fi
+                '''
+            }
+        }
+
+        // ----------------------------------
+        // Versioning
+        // ----------------------------------
+        stage('Calculate Version') {
+            steps {
+                script {
+                    def version = "0.0.0"
+
+                    if (fileExists(env.VERSION_FILE)) {
+                        version = readFile(env.VERSION_FILE).trim()
+                    }
+
+                    def parts = version.tokenize('.')
+                    def patch = parts[2].toInteger() + 1
+                    def newVersion = "${parts[0]}.${parts[1]}.${patch}"
+
+                    writeFile file: env.VERSION_FILE, text: newVersion
+                    env.APP_VERSION = newVersion
+
+                    env.BUILD_DATE = sh(
+                        script: "date +%Y%m%d%H%M",
+                        returnStdout: true
+                    ).trim()
+
+                    env.FULL_VERSION = "${env.APP_VERSION}-${env.BUILD_DATE}"
+                }
+            }
+        }
+
+        // ----------------------------------
+        // Build
+        // ----------------------------------
+        stage('Build') {
+            steps {
+                sh '''
+                    mkdir -p build
+                    tar -czf build/${REPO}-${FULL_VERSION}.tar.gz .
+                '''
+            }
+        }
+
+        // ----------------------------------
+        // Publish
+        // ----------------------------------
+        stage('Publish Artifact') {
+            steps {
+                sh """
+                    echo "Deploying to ${TARGET_SERVER}"
+
+                    scp build/${REPO}-${FULL_VERSION}.tar.gz \
+                        deploy@${TARGET_SERVER}:/opt/artifacts/
+
+                    ssh deploy@${TARGET_SERVER} "
+                        cd /opt/artifacts &&
+                        ln -sfn ${REPO}-${FULL_VERSION}.tar.gz latest.tar.gz
+                    "
+                """
+            }
+        }
+    }
+
+    post {
+        success { echo "✅ Deployment successful" }
+        failure { echo "❌ Pipeline failed" }
+    }
+}
