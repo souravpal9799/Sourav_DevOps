@@ -1,0 +1,21 @@
+{
+  "name": "mongo-express",
+  "version": "1.0.0",
+  "description": "Mongo Express running in Docker with environment configuration",
+  "main": "docker-compose.yml",
+  "scripts": {
+    "start": "docker-compose up",
+    "start:detached": "docker-compose up -d",
+    "stop": "docker-compose down",
+    "logs": "docker-compose logs -f mongo-express",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["mongo-express", "docker"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "mongo-express": "^1.1.0-rc-3"
+  }
+}

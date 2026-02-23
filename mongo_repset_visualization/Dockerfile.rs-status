@@ -1,0 +1,15 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install dependencies
+RUN npm init -y && \
+    npm install express mongodb dotenv
+
+# Copy application files
+COPY rs-status.js .
+COPY public ./public
+
+EXPOSE 3000
+
+CMD ["node", "rs-status.js"]

@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    restart: always
+    network_mode: host
+    environment:
+      ME_CONFIG_MONGODB_URL: ${ME_CONFIG_MONGODB_URL}
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_CONFIG_BASICAUTH_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_CONFIG_BASICAUTH_PASSWORD}
+      ME_CONFIG_SITE_COOKIESECRET: ${ME_CONFIG_SITE_COOKIESECRET:-cookiesecret}
+      ME_CONFIG_SITE_SESSIONSECRET: ${ME_CONFIG_SITE_SESSIONSECRET:-sessionsecret}
+
+  replica-set-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.rs-status
+    container_name: rs-status-dashboard
+    restart: always
+    network_mode: host
+    environment:
+      ME_CONFIG_MONGODB_URL: ${ME_CONFIG_MONGODB_URL}
+      RS_STATUS_PORT: ${RS_STATUS_PORT:-3000}
+    volumes:
+      - ./rs-status.js:/app/rs-status.js
+      - ./public:/app/public
