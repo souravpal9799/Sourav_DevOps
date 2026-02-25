@@ -6,3 +6,17 @@ terraform.tfstate.*
 
 
 **/*.Identifier
+
+# Ignore any terraform state or lock files anywhere in the repo
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+**/*tfstate.backup
+
+# IDE/editor
+.vscode/
+.idea/
+
+# Scripts
+scripts/
