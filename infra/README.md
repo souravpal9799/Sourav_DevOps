@@ -5,7 +5,7 @@ Responsibility:
 - Provide documented, parameterized modules and remote state guidance (S3 + DynamoDB or equivalent) to prevent state drift and enable safe, CI-driven applies.
 
 Contents (recommended):
-- `terraform/eks` – EKS module and example environment configs
+- `infra/terraform/eks` – EKS module and example environment configs
 - `state/` – terraform remote state bootstrap scripts and locking guidance
 
 Operational notes:

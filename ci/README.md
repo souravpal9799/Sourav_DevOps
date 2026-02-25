@@ -5,7 +5,7 @@ Responsibility:
 - Define promotion strategy between environments (image tagging, policy gates, and rollout automation via Argo CD).
 
 Contents (recommended):
-- `Jenkins/` – Jenkinsfile examples, environment scripts
+- `ci/jenkins` – Jenkinsfile examples, environment scripts
 - `pipelines/` – reusable pipeline templates and scanning steps (image scanning, IaC linting)
 
 Operational notes:

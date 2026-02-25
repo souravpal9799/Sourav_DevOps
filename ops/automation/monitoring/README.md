@@ -21,7 +21,7 @@ Everything is automated using **Ansible roles, templates, handlers, and inventor
 ## 2. Directory Structure & What Goes Where
 
 ```
-ansible/
+ops/automation/
 ├── inventory/
 │   ├── inventory.ini
 │   ├── inventory.yml
@@ -277,7 +277,7 @@ Set:
 
 ### Step 4: Run Deployment
 
-From `ansible/` directory:
+From `ops/automation/` directory:
 
 ```bash
 ansible-playbook -i inventory/inventory.ini roles/site.yml

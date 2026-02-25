@@ -5,7 +5,7 @@ Responsibility:
 - Operational documentation for monitoring, alerting, incident response, and runbooks.
 
 Contents (recommended):
-- `ansible/monitoring` – Prometheus/Grafana/Loki roles and site plays
+- `ops/automation/monitoring` – Prometheus/Grafana/Loki roles and site plays
 - `runbooks/` – incident playbooks and owner contacts
 
 Operational notes:

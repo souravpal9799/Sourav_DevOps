@@ -27,9 +27,9 @@ Realistic scenario: a weekend push introduces a host-level patch and a manually-
 This repository addresses the problems by composing standard, proven components and operational patterns:
 - Infrastructure as Code: Terraform modules for EKS, VPC, networking, and key cloud resources to prevent drift and enable repeatable provisioning.
 - Kubernetes orchestration: Helm charts and plain manifests for stateless and stateful workloads with declarative configuration and resource requests/limits.
-- GitOps: Argo CD application manifests to keep cluster state synchronized from git; the `k8s/argocd` folder contains example applications.
-- CI/CD automation: Jenkins pipelines for controlled deployments and environment promotion; repository includes pipeline examples in the `Jenkins/` folder.
-- Observability stack: Prometheus, Alertmanager, Grafana, Loki deployed via Ansible roles in `ansible/monitoring` to provide metrics, logs, and alerting.
+-- GitOps: Argo CD application manifests to keep cluster state synchronized from git; see `platform/kubernetes/python_ms_k8s_manifest/argocd` for examples.
+-- CI/CD automation: Jenkins pipelines for controlled deployments and environment promotion; repository includes pipeline examples in the `ci/jenkins` folder.
+-- Observability stack: Prometheus, Alertmanager, Grafana, Loki deployed via Ansible roles in `ops/automation/monitoring` to provide metrics, logs, and alerting.
 - Security controls: RBAC-first manifests, namespace isolation patterns, and recommendations for secret backends (see Missing Components below).
 - Horizontal scalability: HPA and cluster autoscaler patterns are supported at the manifest and IaC level; workload-level readiness/liveness probes and resource requests/limits are included in examples.
 - Cost-aware design: Terraform variables, node sizing guidance, and pod autoscaling allow balancing cost vs. performance.
@@ -45,7 +45,7 @@ Each component is intended to be wired together in an end-to-end path: Terraform
 - Disaster recovery: snapshot strategies for PersistentVolumes, regular etcd/backups via managed services or Velero for k8s objects, and Terraform state locking/backups for infra state.
 - Security posture: namespace isolation, least-privilege RBAC, network policies for pod segmentation, and audit logging via cloud provider logging + centralized Grafana dashboards.
 - Secrets management: this repo documents patterns but does not ship an enterprise KMS/Vault. Production must integrate HashiCorp Vault, AWS KMS + SOPS, or Kubernetes External Secrets for secret lifecycle management.
-- Monitoring & alerting: pre-built Prometheus scrape configs, Grafana dashboards, and Alertmanager routing in `ansible/monitoring` to detect SLO breaches, pod restarts, and resource saturation.
+-- Monitoring & alerting: pre-built Prometheus scrape configs, Grafana dashboards, and Alertmanager routing in `ops/automation/monitoring` to detect SLO breaches, pod restarts, and resource saturation.
 - Zero-downtime deployments: readiness probes, rolling updates strategy, and staged promotion via GitOps + pipeline gating to ensure canary/blue-green rollouts.
 - Rollback mechanisms: Git-centric rollbacks via Argo CD (revert commit), image pinning strategies, and pipeline-based rollbacks in Jenkins.
 
@@ -93,12 +93,12 @@ Prerequisites
 - Git hosting (GitHub/GitLab) for manifests
 
 High-level steps
-1. Provision infra with Terraform: `terraform/eks` contains EKS modules and examples. Run `terraform init` → `terraform apply` with proper vars.
-2. Bootstrap cluster: configure `kubectl` to the new cluster, install the ingress controller (see `k8s/helm_charts`), and configure cert-manager for TLS.
-3. Install Argo CD: see `k8s/python_ms_k8s_manifest` for Argo CD example; apply the Argo manifests and register the repo.
-4. Deploy observability: run the Ansible playbooks in `ansible/monitoring` to provision Prometheus, Grafana, Loki, and Alertmanager (or deploy them via Helm in GitOps).
+1. Provision infra with Terraform: `infra/terraform/eks` contains EKS modules and examples. Run `terraform init` → `terraform apply` with proper vars.
+2. Bootstrap cluster: configure `kubectl` to the new cluster, install the ingress controller (see `platform/kubernetes/helm_charts`), and configure cert-manager for TLS.
+3. Install Argo CD: see `platform/kubernetes/python_ms_k8s_manifest` for Argo CD example; apply the Argo manifests and register the repo.
+4. Deploy observability: run the Ansible playbooks in `ops/automation/monitoring` to provision Prometheus, Grafana, Loki, and Alertmanager (or deploy them via Helm in GitOps).
 5. Configure CI: wire Jenkins or GitHub Actions to build/push images; ensure image registry credentials and imagePullSecrets are set if needed.
-6. Create Argo CD applications: point Argo to `k8s/` application paths and set target revisions.
+6. Create Argo CD applications: point Argo to `platform/kubernetes/` application paths and set target revisions.
 7. Verify: confirm pods are running, dashboards populate, and sample traffic routes through the ingress.
 
 Rollback
@@ -108,7 +108,7 @@ Rollback
 
 ## 8. Local Development Workflow
 
-- Run services locally (examples provided under `k8s/python_ms_k8s_manifest/app`) for quick feedback.
+-- Run services locally (examples provided under `platform/kubernetes/python_ms_k8s_manifest/app`) for quick feedback.
 - Branching: feature branches → merge to `main` via PR; CI builds images and updates a `images` branch or uses image updater. Use environment branches for staging/prod promotion.
 - Pipeline triggers: CI on PR and main; Argo CD sync on main to promote to cluster based on branch-to-environment policy.
 
@@ -134,12 +134,12 @@ Rollback
 
 ---
 
-Planned repo layout (migration in progress)
-- `infra/terraform` → currently `terraform/` (Terraform modules, remote state guidance)
-- `platform/kubernetes` → currently `k8s/` (Helm charts, Argo CD apps, cluster bootstrap)
-- `ops/automation` → currently `ansible/` and `bash_scripts/` (Ansible playbooks, runbooks, operational scripts)
-- `ci/jenkins` → currently `Jenkins/` (pipeline definitions and CI helpers)
-- `apps/` → currently `k8s/python_ms_k8s_manifest` and `mongo_repset_visualization/` (sample apps and manifests)
+Repository layout (applied)
+- `infra/terraform` (moved from `terraform/`) – Terraform modules and remote state guidance
+- `platform/kubernetes` (moved from `k8s/`) – Helm charts, Argo CD apps, cluster bootstrap
+- `ops/automation` (moved from `ansible/` and `bash_scripts/`) – Ansible playbooks, runbooks, operational scripts
+- `ci/jenkins` (moved from `Jenkins/`) – pipeline definitions and CI helpers
+- `apps/` (moved from `k8s/python_ms_k8s_manifest` and `mongo_repset_visualization/`) – sample apps and manifests
 
 Where to look next (post-migration)
 - `infra/terraform` – cloud infra modules and examples

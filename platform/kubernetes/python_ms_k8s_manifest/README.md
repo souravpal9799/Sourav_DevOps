@@ -39,8 +39,8 @@ Workflow: `.github/workflows/docker-publish.yml`
 - **Triggers:** Push to `main`/`master`, or manual `workflow_dispatch`.
 - **Steps:**
   1. Build and push **user-service**, **order-service**, and **frontend** to `ghcr.io/<owner>/<service>:v<run>` and `:latest`.
-  2. Substitute `GITHUB_REPOSITORY_OWNER` and `IMAGE_TAG` in `k8s/app/*-deployment.yaml`.
-  3. Upload the `k8s/app/` directory (with substituted images) as artifact **k8s-manifests**.
+   2. Substitute `GITHUB_REPOSITORY_OWNER` and `IMAGE_TAG` in `platform/kubernetes/python_ms_k8s_manifest/app/*-deployment.yaml`.
+   3. Upload the `platform/kubernetes/python_ms_k8s_manifest/app/` directory (with substituted images) as artifact **k8s-manifests**.
 
 To deploy the exact images from a run: download the **k8s-manifests** artifact and run:
 
@@ -83,19 +83,19 @@ kubectl apply -f <path-to-downloaded-k8s-app>/ -R
 
    ```
 
-2. **Set your repo URL** in `k8s/argocd/app-application.yaml`: set `repoURL` and `targetRevision` (e.g. `main`). For private repos, add the repo in Argo CD with credentials.
+2. **Set your repo URL** in `platform/kubernetes/python_ms_k8s_manifest/argocd/app-application.yaml`: set `repoURL` and `targetRevision` (e.g. `main`). For private repos, add the repo in Argo CD with credentials.
 
 3. **Apply Argo CD Applications** (Ingress controller first, then app):
 
    ```bash
-   kubectl apply -f k8s/argocd/ingress-nginx-application.yaml
-   kubectl apply -f k8s/argocd/app-application.yaml
+   kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/argocd/ingress-nginx-application.yaml
+   kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/argocd/app-application.yaml
    ```
 
    Argo CD will:
 
    - Install the **NGINX Ingress Controller** from the Helm chart in the `ingress-nginx` namespace.
-   - Sync **frontend**, **user-service**, **order-service**, and **Ingress** from `k8s/app/` into the `app` namespace (with `CreateNamespace=true`, `PruneLast`, and automated selfHeal/prune).
+   - Sync **frontend**, **user-service**, **order-service**, and **Ingress** from `platform/kubernetes/python_ms_k8s_manifest/app/` into the `app` namespace (with `CreateNamespace=true`, `PruneLast`, and automated selfHeal/prune).
 
    Pushes to the repo are detected on refresh; sync applies changes automatically.
 
@@ -104,17 +104,17 @@ kubectl apply -f <path-to-downloaded-k8s-app>/ -R
 Ensure the NGINX Ingress Controller is installed (e.g. via the Argo CD Application above, or [AWS deploy YAML](https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.1/deploy/static/provider/aws/deploy.yaml)). Then:
 
 ```bash
-kubectl apply -f k8s/app/namespace.yaml
-kubectl apply -f k8s/app/user-service-deployment.yaml
-kubectl apply -f k8s/app/order-service-deployment.yaml
-kubectl apply -f k8s/app/frontend-deployment.yaml
-kubectl apply -f k8s/app/ingress.yaml
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/namespace.yaml
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/user-service-deployment.yaml
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/order-service-deployment.yaml
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/frontend-deployment.yaml
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/ingress.yaml
 ```
 
 Or in one go (namespace is defined in the app manifests):
 
 ```bash
-kubectl apply -f k8s/app/
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/
 ```
 
 **Note:** For manual deploy with the repo as-is, replace `GITHUB_REPOSITORY_OWNER` and `IMAGE_TAG` in the deployment files with your registry owner and tag (e.g. from the workflow), or use the manifests from the **k8s-manifests** artifact.
@@ -158,8 +158,8 @@ From another pod in the `app` namespace:
 
 | Path | Contents |
 |------|----------|
-| `k8s/app/` | App manifests: namespace, frontend, user-service, order-service (Deployment + Service, and HPA for user/order), Ingress. Used by Argo CD. |
-| `k8s/argocd/` | Argo CD Applications: NGINX Ingress (Helm) and app (Git, path `k8s/app`). |
+| `platform/kubernetes/python_ms_k8s_manifest/app/` | App manifests: namespace, frontend, user-service, order-service (Deployment + Service, and HPA for user/order), Ingress. Used by Argo CD. |
+| `platform/kubernetes/python_ms_k8s_manifest/argocd/` | Argo CD Applications: NGINX Ingress (Helm) and app (Git, path `platform/kubernetes/python_ms_k8s_manifest/app/`). |
 
 - **user-service** and **order-service** have HorizontalPodAutoscaler (scale when CPU > 80%).
 - **Frontend** is a single replica that proxies `/api/users` and `/api/orders` to the two backend services.
