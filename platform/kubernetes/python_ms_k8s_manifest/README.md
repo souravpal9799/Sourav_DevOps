@@ -108,10 +108,12 @@ kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/namespace.yaml
 kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/user-service-deployment.yaml
 kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/order-service-deployment.yaml
 kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/frontend-deployment.yaml
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/services.yaml
+kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/hpa.yaml
 kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/ingress.yaml
 ```
 
-Or in one go (namespace is defined in the app manifests):
+Or in one go (applies all manifests in the app directory):
 
 ```bash
 kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/app/
@@ -158,8 +160,14 @@ From another pod in the `app` namespace:
 
 | Path | Contents |
 |------|----------|
-| `platform/kubernetes/python_ms_k8s_manifest/app/` | App manifests: namespace, frontend, user-service, order-service (Deployment + Service with HPA), Ingress. Used by Argo CD. |
-| `platform/kubernetes/python_ms_k8s_manifest/app/hpa.yaml` | Centralized HPA definitions for all three services (frontend, user-service, order-service). Scale on CPU > 80%. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/` | App manifests directory for deployments, services, HPA, and Ingress. Used by Argo CD. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/namespace.yaml` | Namespace definition for the app. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/frontend-deployment.yaml` | Frontend Deployment manifest. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/user-service-deployment.yaml` | User-service Deployment manifest. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/order-service-deployment.yaml` | Order-service Deployment manifest. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/services.yaml` | Service definitions for all three services (frontend, user-service, order-service). |
+| `platform/kubernetes/python_ms_k8s_manifest/app/hpa.yaml` | HPA definitions for all three services (scales on CPU > 80%). |
+| `platform/kubernetes/python_ms_k8s_manifest/app/ingress.yaml` | Ingress manifest with path-based routing. |
 | `platform/kubernetes/python_ms_k8s_manifest/argocd/` | Argo CD Applications: NGINX Ingress (Helm) and app (Git, path `platform/kubernetes/python_ms_k8s_manifest/app/`). |
 
 ## Autoscaling
