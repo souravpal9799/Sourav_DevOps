@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: user-service
-                    # Image substituted in CI: REGISTRY/repository_owner/service:tag (see .github/workflows)
+          # Image substituted in CI: REGISTRY/repository_owner/service:tag (see .github/workflows)
           image: ghcr.io/souravpal9799/user-service:v12
           ports:
             - containerPort: 8001

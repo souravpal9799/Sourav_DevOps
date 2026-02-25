@@ -158,8 +158,16 @@ From another pod in the `app` namespace:
 
 | Path | Contents |
 |------|----------|
-| `platform/kubernetes/python_ms_k8s_manifest/app/` | App manifests: namespace, frontend, user-service, order-service (Deployment + Service, and HPA for user/order), Ingress. Used by Argo CD. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/` | App manifests: namespace, frontend, user-service, order-service (Deployment + Service with HPA), Ingress. Used by Argo CD. |
+| `platform/kubernetes/python_ms_k8s_manifest/app/hpa.yaml` | Centralized HPA definitions for all three services (frontend, user-service, order-service). Scale on CPU > 80%. |
 | `platform/kubernetes/python_ms_k8s_manifest/argocd/` | Argo CD Applications: NGINX Ingress (Helm) and app (Git, path `platform/kubernetes/python_ms_k8s_manifest/app/`). |
 
-- **user-service** and **order-service** have HorizontalPodAutoscaler (scale when CPU > 80%).
-- **Frontend** is a single replica that proxies `/api/users` and `/api/orders` to the two backend services.
+## Autoscaling
+
+All three services have **HorizontalPodAutoscaler** (HPA v2) configured:
+
+- **Frontend:** 1–5 replicas (scales when CPU > 80%)
+- **User-service:** 2–10 replicas (scales when CPU > 80%)
+- **Order-service:** 2–10 replicas (scales when CPU > 80%)
+
+HPA definitions are included in each service's deployment file and also consolidated in `app/hpa.yaml` for easy reference. Ensure `metrics-server` is running in the cluster for CPU metrics to be available.

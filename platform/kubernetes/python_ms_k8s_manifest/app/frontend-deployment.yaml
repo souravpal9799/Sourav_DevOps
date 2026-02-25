@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: frontend
-                    # Image substituted in CI: REGISTRY/repository_owner/service:tag (see .github/workflows)
+          # Image substituted in CI: REGISTRY/repository_owner/service:tag (see .github/workflows)
           image: ghcr.io/souravpal9799/frontend:v12
           ports:
             - containerPort: 8002
@@ -58,3 +58,38 @@ spec:
   selector:
     app: frontend
 
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend
+  namespace: app
+  labels:
+    app: frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 10
+          periodSeconds: 60
