@@ -15,6 +15,41 @@ Deploy **frontend**, **user-service**, and **order-service** to an EKS cluster, 
 
 - `kubectl` configured for your EKS cluster (`aws eks update-kubeconfig --region <region> --name <cluster-name>`)
 - Images built and pushed to **GitHub Container Registry** (public). The GitHub Action does this on push to `main`/`master`.
+## Install Argo CD (Required for GitOps deployment)
+
+Run the following commands to install Argo CD:
+
+```bash
+# Create argocd namespace and install Argo CD
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Wait for Argo CD to be ready
+kubectl rollout status deployment/argocd-server -n argocd --timeout=120s
+
+# Get the admin password
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
+
+# Expose Argo CD (choose one option):
+# Option 1: NodePort (recommended for local/on-prem clusters)
+kubectl patch svc argocd-server -n argocd -p '{"spec":{"type":"NodePort"}}'
+kubectl -n argocd get svc argocd-server  # Get the NodePort (usually :30080)
+
+#Local port-forward (no node IP needed)
+kubectl -n argocd port-forward svc/argocd-server 8080:80
+# then open:
+http://<NodeIP>:8080
+
+# Option 2: LoadBalancer (recommended for AWS/Cloud providers)
+kubectl patch svc argocd-server -n argocd -p '{"spec":{"type":"LoadBalancer"}}'
+kubectl -n argocd get svc argocd-server  # Get the external DNS
+
+# Option 3: Port-Forward (for local testing)
+kubectl port-forward svc/argocd-server -n argocd 8080:80  # Access at http://localhost:8080
+```
+
+Login with username `admin` and the password retrieved above.
+
 
 ## Image configuration
 
@@ -52,52 +87,41 @@ kubectl apply -f <path-to-downloaded-k8s-app>/ -R
 
 ### Option 1 – Argo CD (GitOps, recommended)
 
-1. **Install Argo CD** (once):
+After installing Argo CD (see [Install Argo CD](#install-argo-cd-required-for-gitops-deployment) above), configure and deploy your applications:
+
+1. **Update your repo URL** in `platform/kubernetes/python_ms_k8s_manifest/argocd/app-application.yaml`:
+   - Set `repoURL` to your Git repository URL
+   - Set `targetRevision` to the branch you want to deploy (e.g. `main`, `develop`)
+   - For private repositories, configure credentials in Argo CD web UI or CLI
+
+2. **Apply Argo CD Applications** (deploy Ingress controller first, then app):
 
    ```bash
-   kubectl create namespace argocd
-   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-   kubectl patch svc argocd-server -n argocd -p '{"spec":{"type":"LoadBalancer"}}'
-
-   #To get admin password run 
-   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
-
-   #Install the ArgoCD CLI on your local server
-   curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-   sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
-   rm argocd-linux-amd64
-
-   #Then login to the shell 
-   argocd login <Your_argocd_DNS> --username admin \
-      --password $(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d) \
-      --insecure
-
-   #Add your Repo Credentails to the ArgoCD application
-   argocd repo add https://github.com/<owner>/<repo>.git \
-      --username <username> \
-      --password <git_pat_token>
-
-   #Restart the argocd-server
-   kubectl rollout restart deployment argocd-server -n argocd
-
-
-   ```
-
-2. **Set your repo URL** in `platform/kubernetes/python_ms_k8s_manifest/argocd/app-application.yaml`: set `repoURL` and `targetRevision` (e.g. `main`). For private repos, add the repo in Argo CD with credentials.
-
-3. **Apply Argo CD Applications** (Ingress controller first, then app):
-
-   ```bash
+   # Deploy NGINX Ingress Controller via Argo CD
    kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/argocd/ingress-nginx-application.yaml
+   
+   # Wait a moment for ingress to start provisioning
+   sleep 10
+   
+   # Deploy your application (frontend, user-service, order-service) via Argo CD
    kubectl apply -f platform/kubernetes/python_ms_k8s_manifest/argocd/app-application.yaml
    ```
 
-   Argo CD will:
+3. **Verify the deployment**:
 
-   - Install the **NGINX Ingress Controller** from the Helm chart in the `ingress-nginx` namespace.
-   - Sync **frontend**, **user-service**, **order-service**, and **Ingress** from `platform/kubernetes/python_ms_k8s_manifest/app/` into the `app` namespace (with `CreateNamespace=true`, `PruneLast`, and automated selfHeal/prune).
+   ```bash
+   # Check Argo CD applications
+   kubectl get applications -A
+   
+   # Check app pods
+   kubectl get pods -n app
+   
+   # Check ingress is provisioned
+   kubectl get ingress -n app
+   ```
 
-   Pushes to the repo are detected on refresh; sync applies changes automatically.
+**How it works:** Argo CD will automatically sync your manifests from the Git repository. It installs the NGINX Ingress Controller and deploys your services with automated health checks and self-healing enabled.
+
 
 ### Option 2 – Manual (namespace `app`)
 
