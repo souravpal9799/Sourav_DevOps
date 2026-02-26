@@ -35,7 +35,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 kubectl patch svc argocd-server -n argocd -p '{"spec":{"type":"NodePort"}}'
 kubectl -n argocd get svc argocd-server  # Get the NodePort (usually :30080)
 
-#Local port-forward (no node IP needed)
+#Local port-forward 
 kubectl -n argocd port-forward svc/argocd-server 8080:80
 # then open:
 http://<NodeIP>:8080
