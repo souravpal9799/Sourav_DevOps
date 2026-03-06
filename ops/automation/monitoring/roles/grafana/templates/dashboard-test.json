@@ -1,0 +1,117 @@
+{
+    "annotations": {
+      "list": []
+    },
+    "editable": true,
+    "graphTooltip": 0,
+    "id": null,
+    "panels": [
+      {
+        "type": "gauge",
+        "title": "CPU Usage (%)",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(rate(namedprocess_namegroup_cpu_seconds_total{name=~\"$process\"}[1m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "type": "gauge",
+        "title": "Memory Usage (MB)",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "sum(namedprocess_namegroup_memory_bytes{name=~\"$process\"}) / 1024 / 1024",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "decbytes"
+          }
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "CPU Usage Over Time",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(namedprocess_namegroup_cpu_seconds_total{name=~\"$process\"}[1m]) * 100",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        }
+      },
+      {
+        "type": "timeseries",
+        "title": "Memory Usage Over Time",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "namedprocess_namegroup_memory_bytes{name=~\"$process\"} / 1024 / 1024",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ],
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        }
+      }
+    ],
+    "templating": {
+      "list": [
+        {
+          "name": "process",
+          "type": "query",
+          "label": "Select Process",
+          "datasource": "Prometheus",
+          "query": "label_values(namedprocess_namegroup_cpu_seconds_total, name)",
+          "refresh": 1,
+          "includeAll": true,
+          "multi": true
+        }
+      ]
+    },
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": [
+      "process",
+      "monitoring"
+    ],
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "timezone": "",
+    "title": "Process Monitoring Dashboard",
+    "version": 1
+  }
